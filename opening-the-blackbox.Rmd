@@ -9,4 +9,47 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 
+## Feature Selection & The Data Partition
+
+```{r}
+wine <- read_csv("data/wine.csv")
+```
+
+```{r, eval=F}
+library(doParallel)
+cl = makeCluster(2)
+registerDoParallel(cl)
+
+## All subsequent models are then run in parallel
+model <- train(y ~ ., data = training, method = "rf")
+
+## When you are done:
+stopCluster(cl)
+```
+
+```{r}
+library(caret)
+library(dplyr)
+set.seed(1234) # so that the indices will be the same when re-run
+trainIndices = createDataPartition(wine$good, p=.8, list=F)
+
+wine_train = wine %>% 
+  select(-free.sulfur.dioxide, -density, -quality, -color, -white) %>% 
+  slice(trainIndices)
+
+wine_test = wine %>% 
+  select(-free.sulfur.dioxide, -density, -quality, -color, -white) %>% 
+  slice(-trainIndices)
+```
+
+```{r}
+wine_trainplot = select(wine_train, -good) %>% 
+  preProcess(method='range') %>% 
+  predict(newdata= select(wine_train, -good))
+
+# install.packages("ellipse")
+# library(ellipse)
+library(caret)
+#featurePlot(wine_trainplot, wine_train$good, 'box')
+```
+
